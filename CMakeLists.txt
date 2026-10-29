@@ -241,11 +241,9 @@ endif ()
 
 if (NOT WIN32)
 	set (CODESIGN_IDENTITY "Developer ID Application: Karel Landa (4T62PM76AY)")
-	if (AC_MAIN_VERSION EQUAL 30)
-		set (TEST_ADDONS_DIR "/Users/karellanda/Library/CloudStorage/GoogleDrive-landakarel66@gmail.com/Můj disk/Archicad/Doplnky Archicad/Testovane doplnky/AC30")
-	else ()
-		set (TEST_ADDONS_DIR "/Users/karellanda/Library/CloudStorage/GoogleDrive-landakarel66@gmail.com/Můj disk/Archicad/Doplnky Archicad/Testovane doplnky")
-	endif ()
+	set (TEST_ADDONS_BASE_DIR "/Users/karellanda/Library/CloudStorage/GoogleDrive-landakarel66@gmail.com/Můj disk/Archicad/Doplnky Archicad/Testovane doplnky")
+	set (TEST_ADDONS_DIR "${TEST_ADDONS_BASE_DIR}/AC${AC_MAIN_VERSION}")
+	set (VERSIONED_BUNDLE_NAME "${AC_ADDON_NAME}-AC${AC_MAIN_VERSION}.bundle")
 	add_custom_command (TARGET AddOn POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E echo "Signing bundle with Developer ID certificate..."
 		COMMAND rm -rf "/tmp/${AC_ADDON_NAME}_sign_${AC_MAIN_VERSION}"
@@ -257,10 +255,15 @@ if (NOT WIN32)
 		COMMAND codesign --verify --deep --strict --verbose=2 "/tmp/${AC_ADDON_NAME}_sign_${AC_MAIN_VERSION}/${AC_ADDON_NAME}.bundle"
 		COMMAND rm -rf "${CMAKE_BINARY_DIR}/$<CONFIG>/${AC_ADDON_NAME}.bundle"
 		COMMAND cp -R "/tmp/${AC_ADDON_NAME}_sign_${AC_MAIN_VERSION}/${AC_ADDON_NAME}.bundle" "${CMAKE_BINARY_DIR}/$<CONFIG>/"
-		COMMAND ${CMAKE_COMMAND} -E echo "Copying signed bundle to Testovane doplnky folder..."
-		COMMAND rm -rf "${TEST_ADDONS_DIR}/${AC_ADDON_NAME}.bundle"
+		COMMAND ${CMAKE_COMMAND} -E echo "Copying signed bundle to Testovane doplnky folders..."
 		COMMAND mkdir -p "${TEST_ADDONS_DIR}"
+		COMMAND rm -rf "${TEST_ADDONS_DIR}/${AC_ADDON_NAME}.bundle"
 		COMMAND cp -R "/tmp/${AC_ADDON_NAME}_sign_${AC_MAIN_VERSION}/${AC_ADDON_NAME}.bundle" "${TEST_ADDONS_DIR}/"
+		COMMAND rm -rf "${TEST_ADDONS_DIR}/${VERSIONED_BUNDLE_NAME}"
+		COMMAND cp -R "/tmp/${AC_ADDON_NAME}_sign_${AC_MAIN_VERSION}/${AC_ADDON_NAME}.bundle" "${TEST_ADDONS_DIR}/${VERSIONED_BUNDLE_NAME}"
+		COMMAND mkdir -p "${TEST_ADDONS_BASE_DIR}"
+		COMMAND rm -rf "${TEST_ADDONS_BASE_DIR}/${VERSIONED_BUNDLE_NAME}"
+		COMMAND cp -R "/tmp/${AC_ADDON_NAME}_sign_${AC_MAIN_VERSION}/${AC_ADDON_NAME}.bundle" "${TEST_ADDONS_BASE_DIR}/${VERSIONED_BUNDLE_NAME}"
 		COMMAND rm -rf "/tmp/${AC_ADDON_NAME}_sign_${AC_MAIN_VERSION}"
 		VERBATIM
 	)
