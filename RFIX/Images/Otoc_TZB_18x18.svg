@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="18px" height="18px" viewBox="0 0 18 18" version="1.1" xmlns="http://www.w3.org/2000/svg" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10">
+    <g id="Otoc_TZB_18x18">
+        <rect fill="none" height="18" width="18" x="0" y="0"/>
+        <path d="M13.267,17.221L4.338,12.077C3.993,11.879 3.703,11.596 3.480,11.253C3.098,10.664 2.910,9.897 2.965,9.069C2.965,8.769 3.065,8.470 3.166,8.269C3.665,6.469 5.265,5.469 6.765,5.870L15.695,11.013" fill="none" stroke="#92989B" stroke-width="1"/>
+        <path d="M17.295,15.013C16.795,16.813 15.195,17.813 13.695,17.412C13.545,17.362 13.402,17.298 13.268,17.221C12.923,17.023 12.633,16.740 12.410,16.396C12.028,15.808 11.840,15.041 11.895,14.213C11.895,13.912 11.995,13.613 12.095,13.412C12.595,11.613 14.195,10.613 15.695,11.013C17.095,11.513 17.895,13.313 17.295,15.013Z" fill="none" stroke="#92989B" stroke-width="1"/>
+        <path d="M14.691,14.212L5.761,9.069" fill="none" stroke="#263238" stroke-width="1"/>
+        <path d="M9.5,11.5L9.5,9.5" fill="none" stroke="#263238" stroke-width="1"/>
+        <path d="M9.5,11.5L7.5,11.8" fill="none" stroke="#263238" stroke-width="1"/>
+        <path d="M10.5,3.5C10.5,2 8.5,0.5 6.5,0.5C4.5,0.5 2.5,2.5 2.5,4L2.5,6.5" fill="none" stroke="#297FFF" stroke-width="1"/>
+        <path d="M4.5,4.5L2.5,6.5L0.5,4.5" fill="none" stroke="#297FFF" stroke-width="1"/>
+    </g>
+</svg>

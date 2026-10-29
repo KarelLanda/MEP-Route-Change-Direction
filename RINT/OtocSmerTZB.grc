@@ -1,0 +1,20 @@
+/* *****************************************************************************
+// Localizable resource description for OtocSmerTZB Add-On
+// ****************************************************************************/
+
+#include "ResourceIDs.hpp"
+
+'STR#' ID_ADDON_INFO "Add-on Name and Description" {
+/* [  1] */		"Otočit směr TZB trasy"
+/* [  2] */		"Otočí směr vybraných TZB tras (Potrubí, Vzduchotechnika, Kabelové žlaby, Flexibilní potrubí a vložené armatury) při zachování 3D polohy a vazeb."
+}
+
+'STR#' ID_ADDON_MENU "Strings for the Menu" {
+/* [   ] */		"Hotline Cegra"
+/* [  1] */		"Otočit směr TZB trasy^ES^EE^EI^ED^EW^EL^E3^32500"
+}
+
+'STR#' ID_ADDON_PROMPTS "Prompt strings" {
+/* [   ] */		"Hotline Cegra"
+/* [  1] */		"Otočí směr vybraných TZB tras a prvků při zachování jejich 3D polohy a napojení.^ES^EE^EI^ED^EW^EL^E3"
+}
