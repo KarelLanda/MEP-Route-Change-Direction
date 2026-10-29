@@ -22,25 +22,13 @@ inline void WriteToDebugFile (const char* text)
 	}
 }
 
-// Vývojové trasovací výpisy do okna Zpráva (ACAPI_WriteReport s withDial = false) i do diagnostického souboru
-inline void Debug (const GS::UniString& message)
+// Produkční režim: trasovací výpisy nevypisujeme do okna Zpráva, aby nezatěžovaly UI
+inline void Debug (const GS::UniString& /*message*/)
 {
-	GS::UniString fullMsg = "[OtocSmerTZB] " + message;
-	ACAPI_WriteReport (fullMsg, false);
-	WriteToDebugFile (fullMsg.ToCStr (0, MaxUSize, CC_UTF8).Get ());
 }
 
-inline void DebugFmt (const char* fmt, ...)
+inline void DebugFmt (const char* /*fmt*/, ...)
 {
-	char buffer[2048] = {};
-	va_list args;
-	va_start (args, fmt);
-	vsnprintf (buffer, sizeof (buffer), fmt, args);
-	va_end (args);
-
-	GS::UniString fullMsg = GS::UniString ("[OtocSmerTZB] ") + GS::UniString (buffer, CC_UTF8);
-	ACAPI_WriteReport (fullMsg, false);
-	WriteToDebugFile (fullMsg.ToCStr (0, MaxUSize, CC_UTF8).Get ());
 }
 
 // Zobrazení uživatelského upozornění podle pravidla z Messages.hpp
@@ -51,10 +39,6 @@ inline void ReportAlert (const Messages::AlertRule& rule, const GS::UniString& e
 		msgText.Append ("\n\n");
 		msgText.Append (extraDetail);
 	}
-
-	// Vždy zapíšeme do diagnostického logu
-	GS::UniString logLine = GS::UniString ("[OtocSmerTZB][") + GS::UniString (rule.code, CC_UTF8) + "] " + msgText;
-	ACAPI_WriteReport (logLine, false);
 
 	// Pokud má dané pravidlo zapnuté vyskakovací upozornění, zobrazíme nativní DGWarningAlert
 	if (rule.showPopup) {
