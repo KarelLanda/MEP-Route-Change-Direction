@@ -23,6 +23,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <algorithm>
 #if defined (macintosh)
 #include <dlfcn.h>
@@ -58,6 +59,47 @@ namespace OtocSmerTZB {
 namespace {
 
 using NativeODBRefAccessor = ACAPI::Impl::ImplAccessor<OtocSmerTZBTag>;
+
+#if defined (WINDOWS)
+FARPROC FindExportedSymbolByPrefix (HMODULE hMod, const char* prefix, const char* excludeSubstr = nullptr)
+{
+	if (hMod == nullptr || prefix == nullptr)
+		return nullptr;
+
+	if (FARPROC exact = GetProcAddress (hMod, prefix); exact != nullptr)
+		return exact;
+
+	const auto* base = reinterpret_cast<const std::uint8_t*> (hMod);
+	const auto* dos  = reinterpret_cast<const IMAGE_DOS_HEADER*> (base);
+	if (dos->e_magic != IMAGE_DOS_SIGNATURE)
+		return nullptr;
+
+	const auto* nt = reinterpret_cast<const IMAGE_NT_HEADERS*> (base + dos->e_lfanew);
+	if (nt->Signature != IMAGE_NT_SIGNATURE)
+		return nullptr;
+
+	const auto& expDirEntry = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+	if (expDirEntry.VirtualAddress == 0 || expDirEntry.Size == 0)
+		return nullptr;
+
+	const auto* expDir   = reinterpret_cast<const IMAGE_EXPORT_DIRECTORY*> (base + expDirEntry.VirtualAddress);
+	const auto* names    = reinterpret_cast<const DWORD*> (base + expDir->AddressOfNames);
+	const auto* ordinals = reinterpret_cast<const WORD*>  (base + expDir->AddressOfNameOrdinals);
+
+	const std::size_t prefixLen = std::strlen (prefix);
+	for (DWORD i = 0; i < expDir->NumberOfNames; ++i) {
+		const char* name = reinterpret_cast<const char*> (base + names[i]);
+		if (std::strncmp (name, prefix, prefixLen) == 0) {
+			if (excludeSubstr != nullptr && std::strstr (name, excludeSubstr) != nullptr)
+				continue;
+			const WORD ordinalIndex = ordinals[i];
+			if (ordinalIndex < expDir->NumberOfFunctions)
+				return GetProcAddress (hMod, name);
+		}
+	}
+	return nullptr;
+}
+#endif
 
 struct NativeMEPSymbols {
 	using ProcessModificationRequestFn = void* (*) (const void* odbRefUntyped);
@@ -115,23 +157,23 @@ struct NativeMEPSymbols {
 			HMODULE hODB         = GetModuleHandleW (L"ObjectDatabase.dll");
 			if (hODB != nullptr) {
 				s.processModificationRequest = reinterpret_cast<ProcessModificationRequestFn> (
-					GetProcAddress (hODB, "?ProcessModificationRequest@RefUntyped@ODB@@QEBAPEAXXZ"));
+					FindExportedSymbolByPrefix (hODB, "?ProcessModificationRequest@RefUntyped@ODB@@", "ModificationAuthorizationControl"));
 			}
 			if (hMepElements != nullptr) {
 				s.reverseDirection = reinterpret_cast<ReverseDirectionFn> (
-					GetProcAddress (hMepElements, "?ReverseDirection@RoutingElement@MEPElem@@QEAAXXZ"));
+					FindExportedSymbolByPrefix (hMepElements, "?ReverseDirection@RoutingElement@MEPElem@@"));
 				s.updateConnectionAtNode = reinterpret_cast<UpdateConnectionAtNodeFn> (
-					GetProcAddress (hMepElements, "?UpdateConnectionAtNode@RouteGeneration@MEPElem@@YAXAEBV?$Ref@VRoutingNode@MEPElem@@@ODB@@AEBVIdSpace@3@@Z"));
+					FindExportedSymbolByPrefix (hMepElements, "?UpdateConnectionAtNode@RouteGeneration@MEPElem@@"));
 				s.updateRoutingElement = reinterpret_cast<UpdateRoutingElementFn> (
-					GetProcAddress (hMepElements, "?UpdateRoutingElement@RouteGeneration@MEPElem@@YAXAEBV?$Ref@VRoutingElement@MEPElem@@@ODB@@@Z"));
+					FindExportedSymbolByPrefix (hMepElements, "?UpdateRoutingElement@RouteGeneration@MEPElem@@"));
 				s.setSegmentAnchor = reinterpret_cast<SetAnchorFn> (
-					GetProcAddress (hMepElements, "?SetAnchor@RoutingSegment@MEPElem@@QEAAXW4Anchor@VBElem@@@Z"));
+					FindExportedSymbolByPrefix (hMepElements, "?SetAnchor@RoutingSegment@MEPElem@@"));
 				s.setSegmentOffsetX = reinterpret_cast<SetReferenceOffsetXFn> (
-					GetProcAddress (hMepElements, "?SetReferenceOffsetX@RoutingSegment@MEPElem@@QEAAXN@Z"));
+					FindExportedSymbolByPrefix (hMepElements, "?SetReferenceOffsetX@RoutingSegment@MEPElem@@"));
 				s.setSegmentOffsetY = reinterpret_cast<SetReferenceOffsetYFn> (
-					GetProcAddress (hMepElements, "?SetReferenceOffsetY@RoutingSegment@MEPElem@@QEAAXN@Z"));
+					FindExportedSymbolByPrefix (hMepElements, "?SetReferenceOffsetY@RoutingSegment@MEPElem@@"));
 				s.setNodeTransitionPlacement = reinterpret_cast<SetPreferredTransPlacementFn> (
-					GetProcAddress (hMepElements, "?SetPreferredTransitionPlacement@RoutingNode@MEPElem@@QEAAXW4PreferredTransitionPlacement@RouteGeneration@1@@Z"));
+					FindExportedSymbolByPrefix (hMepElements, "?SetPreferredTransitionPlacement@RoutingNode@MEPElem@@"));
 			}
 #endif
 			return s;
@@ -537,11 +579,14 @@ API_Guid RoutingElementReverser::Reverse (const API_Guid& routeGuid)
 										 + (anchorPt.z - segBegin.z) * uz;
 					distFromBegin = std::clamp (distFromBegin, 0.0, segLen);
 
+					// Pozn.: Nepoužívat takeOffRes->GetBaseRotation(), protože tato metoda byla do MEPAPI.dll
+					// přidána až v Archicadu 29 Update 1 (build 3100) a v Archicadu 29.0.0 (build 3000)
+					// by chybějící export znemožnil načtení doplňku. Úhel se plně určuje z 3D vektoru GetOrientation().
 					const double newRot = ComputeTakeOffRotationOnReversedSegment (
 						segEnd,
 						segBegin,
 						takeOffRes->GetOrientation ().direction,
-						takeOffRes->GetBaseRotation ()
+						0.0
 					);
 
 					snap.takeOffs.push_back (TakeOffSnapshot {
